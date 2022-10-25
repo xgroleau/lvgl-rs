@@ -47,7 +47,9 @@ pub(crate) mod mem;
 #[cfg(not(feature = "lvgl_alloc"))]
 use crate::mem::Box;
 
+pub use cstr_core;
 pub use lv_core::*;
+pub use lvgl_sys;
 pub use support::*;
 pub use ui::*;
 

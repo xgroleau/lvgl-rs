@@ -73,6 +73,7 @@ fn main() {
         .include(&vendor_src)
         .include(&vendor)
         .warnings(false)
+        .opt_level(3)
         .include(&lv_config_dir)
         .compile("lvgl");
 
@@ -114,6 +115,28 @@ fn main() {
         }
     }
 
+    let include_paths = String::from_utf8(
+        Build::new()
+            .get_compiler()
+            .to_command()
+            .arg("-E")
+            .arg("-Wp,-v")
+            .arg("-xc")
+            .arg("/dev/null")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("Failed to run the compiler to get paths")
+            .wait_with_output()
+            .expect("Failed to run the compiler to get paths")
+            .stderr,
+    )
+    .unwrap()
+    .lines()
+    .filter_map(|line| line.strip_prefix(" "))
+    .map(|path| format!("-isystem{}", path))
+    .collect::<Vec<_>>();
+
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     let bindings = bindgen::Builder::default()
         .header(shims_dir.join("lvgl_sys.h").to_str().unwrap())
@@ -124,6 +147,7 @@ fn main() {
         .ctypes_prefix("cty")
         .clang_args(&cc_args)
         .clang_args(&additional_args)
+        .clang_args(&include_paths)
         .generate()
         .expect("Unable to generate bindings");
 
